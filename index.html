@@ -1,0 +1,61 @@
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <title>VillageCode CSV → GeoJSON 小工具</title>
+  <!-- 讀取 CSV 用 -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- WKT 轉 GeoJSON 用 -->
+  <script src="https://unpkg.com/terraformer-wkt-parser@2.0.1/terraformer-wkt-parser.min.js"></script>
+  <style>
+    body { font-family: "Noto Sans TC", sans-serif; margin: 40px; }
+    input[type="file"] { margin-top: 8px; }
+    button { padding: 8px 16px; margin-top: 12px; }
+    pre { background: #f7f7f7; padding: 16px; border-radius: 6px; overflow: auto; }
+    .section { margin-bottom: 32px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>VillageCode CSV → GeoJSON 轉換工具</h1>
+
+  <div class="section">
+    <p>
+      ⬆️ 請上傳含有 <strong>VillageCode</strong> 欄位的 CSV（表頭名稱需為 <code>VillageCode</code>，大小寫可以調整）<br/>
+      ⬇️ 工具會依照事先準備好的 對照表，把所有 VillageCode 組成一個 FeatureCollection
+    </p>
+    <input type="file" id="csvFile" accept=".csv" />
+    <button onclick="handleUpload()">轉換</button>
+  </div>
+
+  <div class="section hidden" id="resultSection">
+    <h2>轉換結果</h2>
+    <p>
+      ✅ 找到 <span id="matchedCount">0</span> 筆 VillageCode；
+      ❌ 找不到 <span id="missingCount">0</span> 筆
+    </p>
+    <div id="missingBox" class="hidden">
+      <p>無法對照到的 VillageCode：</p>
+      <pre id="missingList"></pre>
+    </div>
+
+    <h3>GeoJSON</h3>
+    <pre id="geojsonOutput"></pre>
+
+    <button onclick="downloadGeoJSON()">下載 GeoJSON</button>
+  </div>
+
+  <script>
+    // 1. 先調整成你在步驟 1~3 生成的 JSON 檔網址
+    const DATA_URL = 'https://github.com/HuiLingKao/polygon-tool/blob/main/geokeys.json';
+
+    let villageMap = null;
+    let latestGeoJsonText = '';
+    let missingCodes = [];
+
+    // 只載資料一次
+    async function ensureDataLoaded() {
+      if (!villageMap) {
+        const resp = await fetch(DATA_URL);
+        if (!resp.ok) {
+          throw new Error('讀取 VillageCode WKT 對照表失敗。HTTP ' + resp.status);
+        }
