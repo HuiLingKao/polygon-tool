@@ -376,8 +376,6 @@
       renderResult(allPolygons, [...matchedCodes]);
     }
 
-
-
     function renderResult(allPolygons, matchedCodes) {
       resultSection.classList.remove('hidden');
       matchedCountEl.textContent = matchedCodes.length;
@@ -397,42 +395,44 @@
         missingBox.classList.add('hidden');
       }
 
-      // 如果沒有任何匹配到的 VillageCode 或是沒有 polygon
       if (matchedCodes.length === 0 || allPolygons.length === 0) {
         latestGeoJsonText = '';
         geojsonOutput.textContent = '(沒有成功對應到任何 VillageCode)';
         return;
       }
 
-      // 組成 geometry，決定要輸出 Polygon 還是 MultiPolygon
-      const geometry =
-        allPolygons.length === 1
-          ? {
-            type: 'Polygon',
-            coordinates: allPolygons[0]
-          }
-          : {
-            type: 'MultiPolygon',
-            coordinates: allPolygons
-          };
+      // 把所有 polygon 的 ring 展平為 template 要的 coordinates 形式
+      const coordinates = [];
+      allPolygons.forEach(poly => {
+        if (Array.isArray(poly)) {
+          poly.forEach(ring => {
+            if (Array.isArray(ring)) {
+              coordinates.push(ring);
+            }
+          });
+        }
+      });
 
-      const featureCollection = {
-        type: 'FeatureCollection',
-        features: [
+      const template = {
+        "type": "FeatureCollection",
+        "features": [
           {
-            type: 'Feature',
-            properties: {
-              matchedVillageCodes: matchedCodes
-            },
-            geometry
+            "type": "Feature",
+            "properties": {},
+            "geometry": {
+              "type": "Polygon",
+              "coordinates": coordinates
+            }
           }
         ]
       };
 
-      latestGeoJsonText = JSON.stringify(featureCollection, null, 2);
+      latestGeoJsonText = JSON.stringify(template, null, 2);
       geojsonOutput.textContent = latestGeoJsonText;
       downloadBtn.disabled = false;
     }
+
+
     function downloadGeoJSON() {
       if (!latestGeoJsonText) {
         alert('目前沒有可下載的 GeoJSON。');
