@@ -310,7 +310,7 @@
         return;
       }
 
-      const allCoordinates = [];
+      const allPolygons = [];
       missingCodes = [];
       const matchedCodes = new Set();
 
@@ -362,11 +362,9 @@
 
         // 轉成我們要的座標格式
         if (geometry.type === 'Polygon') {
-          geometry.coordinates.forEach(ring => allCoordinates.push(ring));
+          allPolygons.push(geometry.coordinates);
         } else if (geometry.type === 'MultiPolygon') {
-          geometry.coordinates.forEach(poly =>
-            poly.forEach(ring => allCoordinates.push(ring))
-          );
+          geometry.coordinates.forEach(poly => allPolygons.push(poly));
         } else {
           missingCodes.push(code + ' (非 Polygon 型別)');
           return;
@@ -375,12 +373,12 @@
         matchedCodes.add(code);
       });
 
-      renderResult(allCoordinates, [...matchedCodes]);
+      renderResult(allPolygons, [...matchedCodes]);
     }
 
 
 
-    function renderResult(allCoordinates, matchedCodes) {
+    function renderResult(allPolygons, matchedCodes) {
       resultSection.classList.remove('hidden');
       matchedCountEl.textContent = matchedCodes.length;
       missingCountEl.textContent = missingCodes.length;
@@ -399,11 +397,24 @@
         missingBox.classList.add('hidden');
       }
 
-      if (matchedCodes.length === 0) {
+      // 如果沒有任何匹配到的 VillageCode 或是沒有 polygon
+      if (matchedCodes.length === 0 || allPolygons.length === 0) {
         latestGeoJsonText = '';
         geojsonOutput.textContent = '(沒有成功對應到任何 VillageCode)';
         return;
       }
+
+      // 組成 geometry，決定要輸出 Polygon 還是 MultiPolygon
+      const geometry =
+        allPolygons.length === 1
+          ? {
+            type: 'Polygon',
+            coordinates: allPolygons[0]
+          }
+          : {
+            type: 'MultiPolygon',
+            coordinates: allPolygons
+          };
 
       const featureCollection = {
         type: 'FeatureCollection',
@@ -413,10 +424,7 @@
             properties: {
               matchedVillageCodes: matchedCodes
             },
-            geometry: {
-              type: 'Polygon',
-              coordinates: allCoordinates
-            }
+            geometry
           }
         ]
       };
@@ -425,7 +433,6 @@
       geojsonOutput.textContent = latestGeoJsonText;
       downloadBtn.disabled = false;
     }
-
     function downloadGeoJSON() {
       if (!latestGeoJsonText) {
         alert('目前沒有可下載的 GeoJSON。');
@@ -443,6 +450,3 @@
 </body>
 
 </html>
-
-
-
