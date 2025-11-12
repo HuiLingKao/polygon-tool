@@ -280,6 +280,28 @@
       });
     }
 
+    function cleanWkt(raw) {
+      if (!raw) return '';
+
+      let wkt = raw.trim();
+
+      // 1. 移除 SRID=xxxx; 前綴
+      wkt = wkt.replace(/^SRID=\d+;/i, '');
+
+      // 2. 合併多餘空白/換行
+      wkt = wkt.replace(/\s+/g, ' ');
+
+      // 3. 若看起來像 polygon 卻少了結尾 )) / )))
+      if (/^POLYGON\s*\(\(/i.test(wkt) && !/\)\)$/.test(wkt)) {
+        wkt += '))';
+      }
+      if (/^MULTIPOLYGON\s*\(\(\(/i.test(wkt) && !/\)\)\)$/.test(wkt)) {
+        wkt += ')))';
+      }
+
+      return wkt;
+    }
+
     function processRows(rows) {
       if (!rows || rows.length === 0) {
         alert('CSV 沒有讀到任何資料列。');
@@ -302,6 +324,7 @@
       rows.forEach((row) => {
         let code = '';
 
+        // 找出該列的 VillageCode
         for (const key of headerVariants) {
           if (Object.prototype.hasOwnProperty.call(row, key)) {
             code = normalizeCode(row[key]);
@@ -309,7 +332,7 @@
           }
         }
 
-        if (!code) return; // 沒填 VillageCode 就略過 (避免出現空欄位造成錯誤)
+        if (!code) return; // 這列沒填 VillageCode，就略過
 
         const record = villageMap[code];
         if (!record) {
@@ -317,33 +340,43 @@
           return;
         }
 
-        const wkt = record.geopoints || record.geopoint || record.geography || record;
-        if (!wkt) {
+        const rawWkt =
+          record.geopoints || record.geopoint || record.geography || record;
+
+        const normalizedWkt = cleanWkt(rawWkt);
+        if (!normalizedWkt) {
           missingCodes.push(code + ' (缺少 polygon)');
           return;
         }
 
+        let geometry;
         try {
-          const geometry = Terraformer.WKT.parse(wkt);
-          if (geometry.type === 'Polygon') {
-            geometry.coordinates.forEach(ring => allCoordinates.push(ring));
-          } else if (geometry.type === 'MultiPolygon') {
-            geometry.coordinates.forEach(poly =>
-              poly.forEach(ring => allCoordinates.push(ring))
-            );
-          } else {
-            missingCodes.push(code + ' (非 Polygon 型別)');
-            return;
-          }
-          matchedCodes.add(code);
+          geometry = Terraformer.WKT.parse(normalizedWkt);
         } catch (err) {
-          console.error('WKT parse error: ', err);
+          console.error('WKT parse error for', code, normalizedWkt, err);
           missingCodes.push(code + ' (WKT 解析失敗)');
+          return;
         }
+
+        // 轉成我們要的座標格式
+        if (geometry.type === 'Polygon') {
+          geometry.coordinates.forEach(ring => allCoordinates.push(ring));
+        } else if (geometry.type === 'MultiPolygon') {
+          geometry.coordinates.forEach(poly =>
+            poly.forEach(ring => allCoordinates.push(ring))
+          );
+        } else {
+          missingCodes.push(code + ' (非 Polygon 型別)');
+          return;
+        }
+
+        matchedCodes.add(code);
       });
 
       renderResult(allCoordinates, [...matchedCodes]);
     }
+
+
 
     function renderResult(allCoordinates, matchedCodes) {
       resultSection.classList.remove('hidden');
