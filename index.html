@@ -1,4 +1,5 @@
 <html lang="zh-Hant">
+
 <head>
   <meta charset="utf-8" />
   <title>VillageCode CSV → GeoJSON 轉換工具</title>
@@ -13,6 +14,7 @@
       color-scheme: light;
       font-family: "Noto Sans TC", "Segoe UI", sans-serif;
     }
+
     body {
       margin: 0;
       padding: 32px 24px 96px;
@@ -20,10 +22,14 @@
       color: #262a33;
       line-height: 1.6;
     }
-    h1, h2, h3 {
+
+    h1,
+    h2,
+    h3 {
       margin: 16px 0 12px;
       color: #1c2333;
     }
+
     .container {
       max-width: 960px;
       margin: 0 auto;
@@ -32,6 +38,7 @@
       padding: 32px;
       box-shadow: 0 12px 32px rgba(16, 24, 40, .12);
     }
+
     .intro {
       margin-bottom: 28px;
       padding: 20px;
@@ -39,14 +46,17 @@
       background: rgba(59, 130, 246, .08);
       border-radius: 12px;
     }
+
     .form-group {
       margin-bottom: 28px;
     }
+
     label {
       display: block;
       font-weight: 600;
       margin-bottom: 8px;
     }
+
     input[type="file"],
     button {
       font-size: 16px;
@@ -57,6 +67,7 @@
       background: #fff;
       transition: box-shadow .18s ease, transform .18s ease;
     }
+
     button {
       background: #2563eb;
       border-color: #2563eb;
@@ -64,10 +75,12 @@
       font-weight: 600;
       padding: 10px 20px;
     }
+
     button:hover {
       box-shadow: 0 6px 18px rgba(37, 99, 235, .25);
       transform: translateY(-1px);
     }
+
     button:disabled {
       background: #9ca3af;
       border-color: #9ca3af;
@@ -75,6 +88,7 @@
       box-shadow: none;
       transform: none;
     }
+
     pre {
       background: #0f172a;
       color: #e0f2fe;
@@ -85,11 +99,13 @@
       max-height: 420px;
       overflow: auto;
     }
+
     .statbox {
       display: flex;
       gap: 16px;
       margin: 16px 0;
     }
+
     .statcard {
       flex: 1;
       border-radius: 12px;
@@ -97,17 +113,20 @@
       background: #f1f5f9;
       border: 1px solid #e2e8f0;
     }
+
     .statcard span {
       display: block;
       font-size: 32px;
       font-weight: 700;
       color: #1d4ed8;
     }
+
     .tags {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
+
     .tag {
       padding: 6px 12px;
       border-radius: 999px;
@@ -116,19 +135,30 @@
       font-weight: 600;
       font-size: 14px;
     }
+
     footer {
       margin-top: 48px;
       text-align: center;
       color: #6b7280;
       font-size: 14px;
     }
+
     @media (max-width: 768px) {
-      body { padding: 18px; }
-      .container { padding: 24px 18px; }
-      .statbox { flex-direction: column; }
+      body {
+        padding: 18px;
+      }
+
+      .container {
+        padding: 24px 18px;
+      }
+
+      .statbox {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>VillageCode CSV → GeoJSON 轉換工具</h1>
@@ -260,11 +290,26 @@
       missingCodes = [];
       const matchedCodes = new Set();
 
+      const headerVariants = [
+        'VillageCode',
+        'Village_Code',
+        'Village Code',
+        'villagecode',
+        'village_code',
+        'village code'
+      ];
+
       rows.forEach((row) => {
-        const code = normalizeCode(
-          row['VillageCode'] || row['villagecode'] || row['village_code']
-        );
-        if (!code) return;
+        let code = '';
+
+        for (const key of headerVariants) {
+          if (Object.prototype.hasOwnProperty.call(row, key)) {
+            code = normalizeCode(row[key]);
+            if (code) break;
+          }
+        }
+
+        if (!code) return; // 沒填 VillageCode 就略過 (避免出現空欄位造成錯誤)
 
         const record = villageMap[code];
         if (!record) {
@@ -273,7 +318,6 @@
         }
 
         const wkt = record.geopoints || record.geopoint || record.geography || record;
-
         if (!wkt) {
           missingCodes.push(code + ' (缺少 polygon)');
           return;
@@ -284,7 +328,9 @@
           if (geometry.type === 'Polygon') {
             geometry.coordinates.forEach(ring => allCoordinates.push(ring));
           } else if (geometry.type === 'MultiPolygon') {
-            geometry.coordinates.forEach(poly => poly.forEach(ring => allCoordinates.push(ring)));
+            geometry.coordinates.forEach(poly =>
+              poly.forEach(ring => allCoordinates.push(ring))
+            );
           } else {
             missingCodes.push(code + ' (非 Polygon 型別)');
             return;
@@ -360,5 +406,5 @@
     }
   </script>
 </body>
-</html>
 
+</html>
