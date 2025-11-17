@@ -13,7 +13,6 @@ https://huilingkao.github.io/polygon-tool/
 ## 專案結構
 - `index.html`：主要的網頁程式與 UI。
 - `village_polygons.json`：VillageCode→WKT 對照資料（需定期更新）。
-- `test_*.csv`：示範用的測試 CSV 檔案（若有的話）。
 
 ## 使用方式
 1. 點擊「Choose File」選擇 CSV 檔（表頭需包含 `VillageCode`）。
