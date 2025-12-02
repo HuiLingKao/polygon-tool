@@ -408,6 +408,7 @@
       }
 
       // 把所有 polygon 的 ring 展平為 template 要的 coordinates 形式
+      /*
       const coordinates = [];
       allPolygons.forEach(poly => {
         if (Array.isArray(poly)) {
@@ -418,7 +419,23 @@
           });
         }
       });
+      */
+      
+      const features = allPolygons.map(coordinates => ({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates
+        }
+      }));
 
+      const template = {
+        type: 'FeatureCollection',
+        features
+      };
+
+      /*
       const template = {
         "type": "FeatureCollection",
         "features": [
@@ -432,6 +449,7 @@
           }
         ]
       };
+      */
 
       latestGeoJsonText = JSON.stringify(template, null, 2);
       geojsonOutput.textContent = latestGeoJsonText;
@@ -464,6 +482,7 @@
 </body>
 
 </html>
+
 
 
 
