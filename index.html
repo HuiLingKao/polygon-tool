@@ -406,9 +406,9 @@
         geojsonOutput.textContent = '(沒有成功對應到任何 VillageCode)';
         return;
       }
-
-      // 把所有 polygon 的 ring 展平為 template 要的 coordinates 形式
       /*
+      // 把所有 polygon 的 ring 展平為 template 要的 coordinates 形式
+      
       const coordinates = [];
       allPolygons.forEach(poly => {
         if (Array.isArray(poly)) {
@@ -421,6 +421,7 @@
       });
       */
       
+      /*
       const features = allPolygons.map(coordinates => ({
         type: 'Feature',
         properties: {},
@@ -429,11 +430,14 @@
           coordinates
         }
       }));
+      */
 
+      /*
       const template = {
         type: 'FeatureCollection',
         features
       };
+      */
 
       /*
       const template = {
@@ -450,6 +454,24 @@
         ]
       };
       */
+
+      // MultiPolygon = array of polygon coordinate arrays
+      const geometry = {
+        type: 'MultiPolygon',
+        coordinates: allPolygons
+      };
+
+      const template = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry
+          }
+        ] 
+      };
+      
 
       latestGeoJsonText = JSON.stringify(template, null, 2);
       geojsonOutput.textContent = latestGeoJsonText;
@@ -482,6 +504,7 @@
 </body>
 
 </html>
+
 
 
 
