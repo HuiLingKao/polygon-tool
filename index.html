@@ -406,74 +406,31 @@
         geojsonOutput.textContent = '(沒有成功對應到任何 VillageCode)';
         return;
       }
-      /*
-      // 把所有 polygon 的 ring 展平為 template 要的 coordinates 形式
+
+      // --- 修改開始：配合 converted_polygons (5).json 的格式 ---
       
-      const coordinates = [];
-      allPolygons.forEach(poly => {
-        if (Array.isArray(poly)) {
-          poly.forEach(ring => {
-            if (Array.isArray(ring)) {
-              coordinates.push(ring);
-            }
-          });
-        }
+      // 將收集到的每一個多邊形座標，各自包裝成一個獨立的 Feature
+      const features = allPolygons.map(coords => {
+        return {
+          "type": "Feature",
+          "properties": {}, // 依照範例檔，這裡留空物件
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": coords
+          }
+        };
       });
-      */
-      
-      /*
-      const features = allPolygons.map(coordinates => ({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates
-        }
-      }));
-      */
 
-      /*
-      const template = {
-        type: 'FeatureCollection',
-        features
-      };
-      */
-
-      /*
+      // 最終組合成 FeatureCollection
       const template = {
         "type": "FeatureCollection",
-        "features": [
-          {
-            "type": "Feature",
-            "properties": {},
-            "geometry": {
-              "coordinates": coordinates,
-              "type": "Polygon"
-            }
-          }
-        ]
-      };
-      */
-
-      // MultiPolygon = array of polygon coordinate arrays
-      const geometry = {
-        type: 'MultiPolygon',
-        coordinates: allPolygons
+        "features": features
       };
 
-      const template = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            properties: {},
-            geometry
-          }
-        ] 
-      };
-      
+      // --- 修改結束 ---
 
-      latestGeoJsonText = JSON.stringify(template, null, 2);
+      // 使用 4 格縮排，讓格式跟你的目標檔案視覺上更一致
+      latestGeoJsonText = JSON.stringify(template, null, 4);
       geojsonOutput.textContent = latestGeoJsonText;
       downloadBtn.disabled = false;
     }
@@ -504,6 +461,7 @@
 </body>
 
 </html>
+
 
 
 
